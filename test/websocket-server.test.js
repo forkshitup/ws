@@ -6,8 +6,10 @@ const assert = require('assert');
 const crypto = require('crypto');
 const https = require('https');
 const http = require('http');
+const path = require('path');
 const net = require('net');
 const fs = require('fs');
+const os = require('os');
 
 const Sender = require('../lib/sender');
 const WebSocket = require('..');
@@ -114,14 +116,18 @@ describe('WebSocketServer', () => {
 
     it('uses a precreated http server listening on unix socket', function (done) {
       //
-      // Skip this test on Windows as it throws errors for obvious reasons.
+      // Skip this test on Windows. The URL parser:
+      //
+      // - Throws an error if the named pipe uses backward slashes.
+      // - Incorrectly parses the path if the named pipe uses forward slashes.
       //
       if (process.platform === 'win32') return this.skip();
 
       const server = http.createServer();
-      const sockPath = `/tmp/ws.${crypto
-        .randomBytes(16)
-        .toString('hex')}.socket`;
+      const sockPath = path.join(
+        os.tmpdir(),
+        `ws.${crypto.randomBytes(16).toString('hex')}.sock`
+      );
 
       server.listen(sockPath, () => {
         const wss = new WebSocket.Server({ server });
